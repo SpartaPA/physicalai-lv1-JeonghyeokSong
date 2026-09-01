@@ -41,3 +41,134 @@ motor.cpp 만 수정 했지만 main.cpp 도 motor 를 참조 하고있기 때문
 
 # 문제 2.
 
+## 1. 다형성 루프 출력
+
+```
+Lidar data would be here...
+Imu data would be here...
+```
+
+## 2. 스택 객체와 힙 객체의 소멸 시점
+
+종료 또는 블록 나오면 선언의 역순으로 정리됨. 클래스 내부에서는 종속의 역순으로 정리된다.
+
+```
+Lidar data would be here...
+Imu data would be here...
+~Lidar
+~Sensor
+~Imu
+~Sensor
+```
+
+## 3. 가상 소멸자를 뺐을 때의 차이
+
+가상 소멸자를 제거 했을때,
+출력 안함.
+```
+Lidar data would be here...
+Imu data would be here...
+```
+virtual 타입만 제거 했을때,
+상속 받은 클래스 들은 소멸자 호출 안됨.
+```
+Lidar data would be here...
+Imu data would be here...
+~Sensor
+~Sensor
+```
+
+## 4. `count_if` 결과
+
+```
+최근 lidar 측정값0.1, 0.2
+최근 imu 측정값0.3, 0.4
+0.5 이내 포인트 개수: 2
+```
+
+## 5. 누수 검출 결과
+
+**fsanitize=address**
+SUMMARY: 루프로 돌린 10개의 오브젝트 검출 new_delete 
+
+```
+=================================================================
+==35687==ERROR: LeakSanitizer: detected memory leaks
+
+Direct leak of 240 byte(s) in 10 object(s) allocated from:
+    #0 0x7d36a0eb61e7 in operator new(unsigned long) ../../../../src/libsanitizer/asan/asan_new_delete.cpp:99
+    #1 0x59b84b741b0d in main /home/sjh/git/physicalai-lv1-assignments/lv1-2/cpp_basics/sensors/main.cpp:105
+    #2 0x7d36a0629d8f in __libc_start_call_main ../sysdeps/nptl/libc_start_call_main.h:58
+
+SUMMARY: AddressSanitizer: 240 byte(s) leaked in 10 allocation(s).
+```
+
+수정 후 소멸자 전부 호출됨
+```
+./main_asan 
+Lidar data would be here...
+Imu data would be here...
+최근 lidar 측정값0.1, 0.2
+최근 imu 측정값0.3, 0.4
+0.5 이내 포인트 개수: 3
+clamp speed: 5
+clamp pixel: 100
+~Lidar
+~Sensor
+~Lidar
+~Sensor
+~Lidar
+~Sensor
+~Lidar
+~Sensor
+~Lidar
+~Sensor
+~Lidar
+~Sensor
+~Lidar
+~Sensor
+~Lidar
+~Sensor
+~Lidar
+~Sensor
+~Lidar
+~Sensor
+~Lidar
+~Sensor
+~Imu
+~Sensor
+```
+
+**valgrind**
+검출: in use at exit: 240 bytes in 10 blocks
+```
+==36999== HEAP SUMMARY:
+==36999==     in use at exit: 240 bytes in 10 blocks
+==36999==   total heap usage: 21 allocs, 11 frees, 74,400 bytes allocated
+==36999== 
+==36999== 240 bytes in 10 blocks are definitelylost in loss record 1 of 1
+==36999==    at 0x4849013: operator new(unsigned long) (in /usr/libexec/valgrind/vgpreload_memcheck-amd64-linux.so)
+==36999==    by 0x10AE43: main (in /home/sjh/git/physicalai-lv1-assignments/lv1-2/cpp_basics/sensors/main)
+==36999== 
+==36999== LEAK SUMMARY:
+==36999==    definitely lost: 240 bytes in 10 blocks
+==36999==    indirectly lost: 0 bytes in 0 blocks
+==36999==      possibly lost: 0 bytes in 0 blocks
+==36999==    still reachable: 0 bytes in 0 blocks
+==36999==         suppressed: 0 bytes in 0 blocks
+==36999== 
+==36999== For lists of detected and suppressed errors, rerun with: -s
+==36999== ERROR SUMMARY: 1 errors from 1 contexts (suppressed: 0 from 0)
+```
+
+std::make_unique 사용
+```
+==37257== HEAP SUMMARY:
+==37257==     in use at exit: 0 bytes in 0 blocks
+==37257==   total heap usage: 21 allocs, 21 frees, 74,400 bytes allocated
+==37257== 
+==37257== All heap blocks were freed -- no leaks are possible
+==37257== 
+==37257== For lists of detected and suppressed errors, rerun with: -s
+==37257== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 0 from 0)
+```
