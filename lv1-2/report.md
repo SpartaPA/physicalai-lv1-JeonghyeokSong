@@ -41,3 +41,43 @@ motor.cpp 만 수정 했지만 main.cpp 도 motor 를 참조 하고있기 때문
 
 # 문제 2.
 
+## 1. 다형성 루프 출력
+
+```
+Lidar data would be here...
+Imu data would be here...
+```
+
+## 2. 스택 객체와 힙 객체의 소멸 시점
+
+종료 또는 블록 나오면 선언의 역순으로 정리됨. 클래스 내부에서는 종속의 역순으로 정리된다.
+
+```
+Lidar data would be here...
+Imu data would be here...
+~Lidar
+~Sensor
+~Imu
+~Sensor
+```
+
+## 3. 가상 소멸자를 뺐을 때의 차이
+
+가상 소멸자를 제거 했을때,
+출력 안함.
+```
+Lidar data would be here...
+Imu data would be here...
+```
+virtual 타입만 제거 했을때,
+상속 받은 클래스 들은 소멸자 호출 안됨.
+```
+Lidar data would be here...
+Imu data would be here...
+~Sensor
+~Sensor
+```
+
+
+## 4. `count_if` 결과
+
