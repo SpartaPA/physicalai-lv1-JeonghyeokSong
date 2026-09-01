@@ -1,0 +1,3 @@
+/home/pa2/git/physicalai-lv1-assignments/lv1-2/cpp_basics/build/CMakeFiles/main.dir
+/home/pa2/git/physicalai-lv1-assignments/lv1-2/cpp_basics/build/CMakeFiles/edit_cache.dir
+/home/pa2/git/physicalai-lv1-assignments/lv1-2/cpp_basics/build/CMakeFiles/rebuild_cache.dir
