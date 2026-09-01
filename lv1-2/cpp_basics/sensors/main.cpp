@@ -2,12 +2,17 @@
 #include<vector>
 #include<memory>
 #include<cmath>
+#include<algorithm>
+#include<unordered_map>
+#include<string>
+
+
 
 class Sensor
 {
 public:
     virtual void read() = 0;
-    // ~Sensor() { std::cout << "~Sensor\n"; }
+    virtual ~Sensor() { std::cout << "~Sensor\n"; }
 };
 
 class Lidar : public Sensor
@@ -36,9 +41,17 @@ struct Point
     double y;
 };
 
-double distance(const Point& a, const Point& b)
+double distance(const Point& a)
 {
-    return sqrt(pow((a.x-b.x),2) + pow((a.y-b.y),2));
+    return std::sqrt(a.x * a.x + a.y * a.y);
+}
+
+template<typename T>
+T clamp(T value, T min, T max)
+{
+    if (value < min) return min;
+    if (value > max) return max;
+    return value;
 }
 
 int main()
@@ -63,10 +76,37 @@ int main()
     // }
     // std::cout << "블록 빠져나옴\n";
 
-    Point a {1.0,1.5};
-    Point b {2.0,1.0};
+    std::vector<Point> points {{1,2}, {.3,.2}, {5,6}};
 
-    double dist {distance(a,b)};
-    std::cout << dist << '\n';
+    std::unordered_map<std::string, Point> point_map;
+    Point last_lidar_point = {0.1, 0.2};
+    point_map["lidar"] = last_lidar_point;
+    points.push_back(last_lidar_point);
+
+    Point last_imu_point = {0.3, 0.4};
+    point_map["imu"] = last_imu_point;
+    points.push_back(last_imu_point);
+    
+    int n = std::count_if(points.begin(), points.end(), [](const Point& p){ return distance(p) <= 0.5; });
+
+    std::cout << "최근 lidar 측정값" << point_map["lidar"].x << ", " << point_map["lidar"].y << '\n';
+    std::cout << "최근 imu 측정값" << point_map["imu"].x << ", " << point_map["imu"].y << '\n';
+
+    std::cout << "0.5 이내 포인트 개수: " << n << '\n';
+
+    double speed = clamp(7.4, 1.0, 5.0);
+    int pixel = clamp(31, 100, 255);
+
+    std::cout << "clamp speed: " << speed << '\n';
+    std::cout << "clamp pixel: " << pixel << '\n';
+
+    for (int i = 0; i < 10; ++i)
+    {
+        // Lidar* my_lidar = new Lidar(30, 8000);
+        auto lidar = std::make_unique<Lidar>(30, 8000);
+    }
+    
+
+
     return 0;
 }
