@@ -4,7 +4,6 @@ import numpy as np
 from src.rotation import rot_x, rot_y, rot_z
 from src.transform import make_T, inv_T, transform_points
 
-
 class CoordinateChain:
     def __init__(self, root="base"):
         return None
@@ -24,15 +23,12 @@ class CoordinateChain:
     def transform(self, a, b, pts):
         return NotImplementedError
 
-
 def default_chain():
     chain = CoordinateChain()
     return chain
 
-
 def camera_point_to_base(p_cam, chain):
     raise NotImplementedError
-
 
 def base_point_to_camera(p_base, chain):
     raise NotImplementedError
