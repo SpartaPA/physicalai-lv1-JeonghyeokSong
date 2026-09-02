@@ -175,7 +175,7 @@ std::make_unique 사용
 
 # 문제 3.
 
-## /turtle1/pose 필드
+## 1. /turtle1/pose 필드
 
 ```
 x: 5.544444561004639
@@ -183,4 +183,23 @@ y: 5.544444561004639
 theta: 0.0
 linear_velocity: 0.0
 angular_velocity: 0.0
+```
+
+## 2. ros2 topic hz /turtle_distance 출력
+
+```
+average rate: 9.999
+	min: 0.099s max: 0.101s std dev: 0.00034s window: 84
+average rate: 9.999
+	min: 0.099s max: 0.101s std dev: 0.00033s window: 95
+average rate: 10.000
+	min: 0.099s max: 0.101s std dev: 0.00034s window: 106
+average rate: 10.000
+	min: 0.099s max: 0.101s std dev: 0.00033s window: 117
+
+```
+
+## 3. 경고 로그
+```
+[WARN] [1788348962.936525683] [distance_watcher]: Distance 7.84 > 3.00!
 ```
