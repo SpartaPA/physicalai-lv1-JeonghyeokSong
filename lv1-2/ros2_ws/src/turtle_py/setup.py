@@ -24,7 +24,8 @@ setup(
     },
     entry_points={
         'console_scripts': [
-            'distance_publisher = turtle_py.distance_publisher:main'
+            'distance_publisher = turtle_py.distance_publisher:main',
+            'distance_watcher = turtle_py.distance_watcher:main'
         ],
     },
 )
