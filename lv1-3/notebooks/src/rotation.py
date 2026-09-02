@@ -70,3 +70,8 @@ def is_rotation(M, eps = 1e-14):
     else :
         return False
 
+def axis_angle_from_matrix():
+    return NotImplemented
+
+def quaternion_from_axis_angle():
+    return NotImplemented
