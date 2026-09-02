@@ -1,6 +1,8 @@
 from __future__ import annotations
 import numpy as np
 
+from src.vectors import gauss_eliminate
+
 def make_T(R,t):
     
     if not isinstance(t,np.ndarray):
@@ -65,7 +67,24 @@ def transform_direction(T,v):
     return r_p[:3]
 
 def least_squares_normal_equation(A,b):
-    return NotImplemented
 
-def rmse():
-    return NotImplemented
+    A = A.copy()
+    AtA = A.T@A + 1e-6*np.eye(A.shape[1])
+    Ab = A.T@b
+
+    x,_ = gauss_eliminate(AtA, Ab)
+
+    r = b - A.copy()@x
+
+    return x , r
+
+def rmse(r):
+
+    sum = 0.0
+    for i in r:
+        sum += i**2
+        
+    mean = sum / len(r)
+    
+    return np.sqrt(mean)
+
