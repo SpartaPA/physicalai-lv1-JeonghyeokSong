@@ -1,0 +1,3 @@
+[console_scripts]
+distance_publisher = turtle_py.distance_publisher:main
+

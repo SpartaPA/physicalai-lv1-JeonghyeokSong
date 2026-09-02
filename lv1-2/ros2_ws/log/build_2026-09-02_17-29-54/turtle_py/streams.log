@@ -1,0 +1,23 @@
+[0.565s] Invoking command in '/home/pa2/git/physicalai-lv1-assignments/lv1-2/ros2_ws/build/turtle_py': PYTHONPATH=/home/pa2/git/physicalai-lv1-assignments/lv1-2/ros2_ws/build/turtle_py/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/pa2/git/physicalai-lv1-assignments/lv1-2/ros2_ws/install/turtle_py/lib/python3.10/site-packages:${PYTHONPATH} VIRTUAL_ENV_PROMPT=(.venv) /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py develop --editable --build-directory /home/pa2/git/physicalai-lv1-assignments/lv1-2/ros2_ws/build/turtle_py/build --no-deps symlink_data
+[0.716s] running develop
+[0.792s] running egg_info
+[0.792s] creating turtle_py.egg-info
+[0.792s] writing turtle_py.egg-info/PKG-INFO
+[0.792s] writing dependency_links to turtle_py.egg-info/dependency_links.txt
+[0.792s] writing entry points to turtle_py.egg-info/entry_points.txt
+[0.792s] writing requirements to turtle_py.egg-info/requires.txt
+[0.792s] writing top-level names to turtle_py.egg-info/top_level.txt
+[0.792s] writing manifest file 'turtle_py.egg-info/SOURCES.txt'
+[0.793s] reading manifest file 'turtle_py.egg-info/SOURCES.txt'
+[0.793s] writing manifest file 'turtle_py.egg-info/SOURCES.txt'
+[0.794s] running build_ext
+[0.794s] Creating /home/pa2/git/physicalai-lv1-assignments/lv1-2/ros2_ws/install/turtle_py/lib/python3.10/site-packages/turtle-py.egg-link (link to .)
+[0.794s] 
+[0.794s] Installed /home/pa2/git/physicalai-lv1-assignments/lv1-2/ros2_ws/build/turtle_py
+[0.794s] running symlink_data
+[0.794s] creating /home/pa2/git/physicalai-lv1-assignments/lv1-2/ros2_ws/install/turtle_py/share/ament_index
+[0.794s] creating /home/pa2/git/physicalai-lv1-assignments/lv1-2/ros2_ws/install/turtle_py/share/ament_index/resource_index
+[0.794s] creating /home/pa2/git/physicalai-lv1-assignments/lv1-2/ros2_ws/install/turtle_py/share/ament_index/resource_index/packages
+[0.794s] symbolically linking /home/pa2/git/physicalai-lv1-assignments/lv1-2/ros2_ws/build/turtle_py/resource/turtle_py -> /home/pa2/git/physicalai-lv1-assignments/lv1-2/ros2_ws/install/turtle_py/share/ament_index/resource_index/packages
+[0.794s] symbolically linking /home/pa2/git/physicalai-lv1-assignments/lv1-2/ros2_ws/build/turtle_py/package.xml -> /home/pa2/git/physicalai-lv1-assignments/lv1-2/ros2_ws/install/turtle_py/share/turtle_py
+[0.806s] Invoked command in '/home/pa2/git/physicalai-lv1-assignments/lv1-2/ros2_ws/build/turtle_py' returned '0': PYTHONPATH=/home/pa2/git/physicalai-lv1-assignments/lv1-2/ros2_ws/build/turtle_py/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/pa2/git/physicalai-lv1-assignments/lv1-2/ros2_ws/install/turtle_py/lib/python3.10/site-packages:${PYTHONPATH} VIRTUAL_ENV_PROMPT=(.venv) /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py develop --editable --build-directory /home/pa2/git/physicalai-lv1-assignments/lv1-2/ros2_ws/build/turtle_py/build --no-deps symlink_data
