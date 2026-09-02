@@ -172,3 +172,15 @@ std::make_unique 사용
 ==37257== For lists of detected and suppressed errors, rerun with: -s
 ==37257== ERROR SUMMARY: 0 errors from 0 contexts (suppressed: 0 from 0)
 ```
+
+# 문제 3.
+
+## /turtle1/pose 필드
+
+```
+x: 5.544444561004639
+y: 5.544444561004639
+theta: 0.0
+linear_velocity: 0.0
+angular_velocity: 0.0
+```
