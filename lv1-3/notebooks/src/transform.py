@@ -58,8 +58,6 @@ def transform_points(T,pts):
 
     return O[:,:3]  
 
-
-
 def transform_direction(T,v):
     _v = to_homogeneous(v.copy(),0)
     r_p = T@_v
@@ -69,11 +67,10 @@ def transform_direction(T,v):
 def least_squares_normal_equation(A,b):
 
     A = A.copy()
-    AtA = A.T@A + 1e-6*np.eye(A.shape[1])
+    AtA = A.T@A
     Ab = A.T@b
 
     x,_ = gauss_eliminate(AtA, Ab)
-
     r = b - A.copy()@x
 
     return x , r
@@ -87,4 +84,3 @@ def rmse(r):
     mean = sum / len(r)
     
     return np.sqrt(mean)
-
