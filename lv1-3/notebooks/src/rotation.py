@@ -70,8 +70,28 @@ def is_rotation(M, eps = 1e-14):
     else :
         return False
 
-def axis_angle_from_matrix():
-    return NotImplemented
+def axis_angle_from_matrix(R, eps = 1e-6):
+    R = R.copy()
+    Rx = (R-R.T)/2
 
-def quaternion_from_axis_angle():
-    return NotImplemented
+    tr = 0
+    for i, r in enumerate(R):
+        tr += r[i]
+    theta = np.arccos((tr-1)*0.5)
+
+    axis = np.array([Rx[2,1]-Rx[1,2], Rx[0,2]-Rx[2,0], Rx[1,0]-Rx[0,1]])
+    if theta < eps:
+        axis = np.array([1,0,0])
+    elif np.pi-theta < eps:
+        A = (R+np.eye(3))*0.5
+        k = np.argmax(np.array([A[0,0],A[1,1], A[2,2]]))
+        axis = A[:, k] / np.sqrt(A[k,k])
+    else :
+        axis *= 1/(2*np.sin(theta))
+    return axis, theta
+
+def quaternion_from_axis_angle(axis, angle):
+    x,y,z = normalize(axis)*np.sin(angle*0.5)
+    w = np.cos(angle*0.5)
+
+    return np.array([x,y,z,w])
