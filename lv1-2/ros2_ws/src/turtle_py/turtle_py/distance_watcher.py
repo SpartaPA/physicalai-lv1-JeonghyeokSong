@@ -8,7 +8,7 @@ class DistanceWatcher(Node):
         self.declare_parameter('warn_distance', 3.0)
         self.declare_parameter('publish_rate',10)
 
-        self.subscriber = self.create_subscription(Float32, '/turtle_distance', self.distance_callback, self.get_parameter('publish_rate').value)
+        self.subscriber = self.create_subscription(Float32, '/turtle_distance', self.distance_callback, 10)
 
     def distance_callback(self, msg):
         threshold = self.get_parameter('warn_distance').value
