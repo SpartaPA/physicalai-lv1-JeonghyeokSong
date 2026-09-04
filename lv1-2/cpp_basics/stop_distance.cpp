@@ -4,7 +4,7 @@ constexpr double g = 9.80665;
 
 double s_dist ( double vel, double mu )
 {
-    return (vel*vel) / (mu*g);
+    return (vel*vel) / (2.0*mu*g);
 }
 
 int main()

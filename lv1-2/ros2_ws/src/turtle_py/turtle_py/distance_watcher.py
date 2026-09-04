@@ -5,8 +5,7 @@ from std_msgs.msg import Float32
 class DistanceWatcher(Node):
     def __init__(self):
         super().__init__('distance_watcher')
-        self.declare_parameter('warn_distance', 3.0)
-        self.declare_parameter('publish_rate',10)
+        self.declare_parameter('warn_distance', 2.5)
 
         self.subscriber = self.create_subscription(Float32, '/turtle_distance', self.distance_callback, 10)
 
@@ -17,7 +16,6 @@ class DistanceWatcher(Node):
         else :
             pass
 
-        
 def main(args=None):
     rclpy.init(args=args)
     node = DistanceWatcher()

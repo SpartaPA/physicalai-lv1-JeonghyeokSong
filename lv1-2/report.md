@@ -17,7 +17,7 @@ pa2@pa2-Legion-Pro-5-16IAX10:~/git/physicalai-lv1-assignments/lv1-2/cpp_basics$ 
 ```
 pa2@pa2-Legion-Pro-5-16IAX10:~/git/physicalai-lv1-assignments/lv1-2/cpp_basics$ g++ main.o -o main
 /usr/bin/ld: main.o: in function `main':
-main.cpp:(.text+0x28): undefined reference to `Motor::Motor(int)'
+main.cpp:(.text+0x28): undefined reference to `Motor::Motor(unsigned int)'
 collect2: error: ld returned 1 exit status
 ```
 
@@ -35,7 +35,7 @@ Consolidate compiler generated dependencies of target main
 
 ## 4. 증분 빌드 시 재컴파일된 파일
 
-motor.cp,p main.cpp
+motor.cpp main.cpp
 
 motor.cpp 만 수정 했지만 main.cpp 도 motor 를 참조 하고있기 때문에 재 컴파일 되었다. 증분 빌드의 단위는 소스파일.cpp 가 아니라 의존 하는 모든 파일이다.
 
@@ -83,7 +83,7 @@ Imu data would be here...
 ```
 최근 lidar 측정값0.1, 0.2
 최근 imu 측정값0.3, 0.4
-0.5 이내 포인트 개수: 2
+0.5 이내 포인트 개수: 3
 ```
 
 ## 5. 누수 검출 결과
@@ -201,14 +201,52 @@ average rate: 10.000
 
 ## 3. 경고 로그
 ```
-[WARN] [1788348962.936525683] [distance_watcher]: Distance 7.84 > 3.00!
+[WARN] [1788348962.936525683] [distance_watcher]: Distance 7.84 > 2.50!
 ```
 
 ## 4. 구독자 2개 동시 수신 확인
 ![alt text](<스크린샷 2026-09-03 16-32-47.png>)
 
 ## 5. 정사각형 주행
-![alt text](<스크린샷 2026-09-03 16-28-04.png>)
+다각형 가능
+![alt text](image-1.png)
 
 ## 6. 정상 종료
 ![alt text](image.png)
+
+
+# 문제 4.
+
+## 1. colcon build 성공 출력
+
+```
+pa2@pa2-Legion-Pro-5-16IAX10:~/git/physicalai-lv1-assignments/lv1-2/ros2_ws$ ros2 pkg create turtle_cpp --build-type ament_cmake --dependencies rclcpp std_msgs
+going to create a new package
+package name: turtle_cpp
+destination directory: /home/pa2/git/physicalai-lv1-assignments/lv1-2/ros2_ws
+package format: 3
+version: 0.0.0
+description: TODO: Package description
+maintainer: ['pa2 <ef70024@gmail.com>']
+licenses: ['TODO: License declaration']
+build type: ament_cmake
+dependencies: ['rclcpp', 'std_msgs']
+creating folder ./turtle_cpp
+creating ./turtle_cpp/package.xml
+creating source and include folder
+creating folder ./turtle_cpp/src
+creating folder ./turtle_cpp/include/turtle_cpp
+creating ./turtle_cpp/CMakeLists.txt
+
+[WARNING]: Unknown license 'TODO: License declaration'.  This has been set in the package.xml, but no LICENSE file has been created.
+It is recommended to use one of the ament license identitifers:
+Apache-2.0
+BSL-1.0
+BSD-2.0
+BSD-2-Clause
+BSD-3-Clause
+GPL-3.0-only
+LGPL-3.0-only
+MIT
+MIT-0
+```
