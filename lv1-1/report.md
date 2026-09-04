@@ -2,7 +2,7 @@
 
 ## 1. 배달 로봇의 연산 분담과 실시간성 설계
 
-| 부품       | 주기         | 지연 예산   | 초당 데이터 크기         | 데이터 타입                    | 비고                                 |
+| 부품       | 주기         | 지연 예산   | 데이터 전송량        | 데이터 타입                    | 비고                                 |
 | -------- | ---------- | ------- | ----------------- | ------------------------- | ---------------------------------- |
 | 2D Lidar | 8hz        | 125ms   | 0.257mbps         | sensor_msgs/LaserScan     | float32 / 초당 8000 샘플               |
 | 카메라      | 1080p30fps | 33.33ms | 622mbps, 1492mbps | sensor_msgs/Image.msg     | flfoat32 / raw(10bit), RGB         |
@@ -127,13 +127,14 @@ MODE
 
 저장소
 - https://github.com/cowsjh/physicalai-lv1-assignments.git
+
 PR URL
 - https://github.com/cowsjh/physicalai-lv1-assignments/pull/1
 
 ## 2. 리뷰 코멘트와 반영 커밋
 
-![pr](PR.png)
-![prcomments](PR-comments.png)
+![pr](image.png)
+![prcomments](image-1.png)
 
 ## 3. 충돌이 난 파일과 줄.
 
