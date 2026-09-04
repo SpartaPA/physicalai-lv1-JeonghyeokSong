@@ -69,12 +69,12 @@ int main()
         s->read();
     }
 
-    // std::cout << "블록 진입 전\n";
-    // {
-    //     Lidar stack_lidar(1,1);
-    //     auto heap_imu = std::make_unique<Imu>();
-    // }
-    // std::cout << "블록 빠져나옴\n";
+    std::cout << "블록 진입 전\n";
+    {
+        Lidar stack_lidar(1,1);
+        auto heap_imu = std::make_unique<Imu>();
+    }
+    std::cout << "블록 빠져나옴\n";
 
     std::vector<Point> points {{1,2}, {.3,.2}, {5,6}};
 
@@ -87,7 +87,7 @@ int main()
     point_map["imu"] = last_imu_point;
     points.push_back(last_imu_point);
     
-    int n = std::count_if(points.begin(), points.end(), [](const Point& p){ return distance(p) <= 0.5; });
+    int n = std::count_if(points.begin(), points.end(), [](const Point& p){ return distance(p) <= 3.5; });
 
     std::cout << "최근 lidar 측정값" << point_map["lidar"].x << ", " << point_map["lidar"].y << '\n';
     std::cout << "최근 imu 측정값" << point_map["imu"].x << ", " << point_map["imu"].y << '\n';
