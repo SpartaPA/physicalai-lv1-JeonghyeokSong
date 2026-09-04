@@ -1,0 +1,5 @@
+#lidar
+ATTR{loop/backing_file}=="/home/pa2/fake_sensors/lidar.img", SYMLINK+="robot_lidar"
+
+#Imu
+ATTR{loop/backing_file}=="/home/pa2/fake_sensors/imu.img", SYMLINK+="robot_imu"
