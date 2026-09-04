@@ -9,6 +9,7 @@ endif()
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
+find_package(turtlesim REQUIRED)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)
@@ -21,5 +22,19 @@ if(BUILD_TESTING)
   set(ament_cmake_cpplint_FOUND TRUE)
   ament_lint_auto_find_test_dependencies()
 endif()
+
+add_executable(cpp_distance_publisher src/cpp_distance_publisher.cpp)
+add_executable(cpp_distance_watcher src/cpp_distance_watcher.cpp)
+ament_target_dependencies(cpp_distance_publisher rclcpp std_msgs turtlesim)
+ament_target_dependencies(cpp_distance_watcher rclcpp std_msgs)
+
+
+install(
+  TARGETS
+  cpp_distance_publisher
+  cpp_distance_watcher
+  DESTINATION lib/${PROJECT_NAME}
+  )
+
 
 ament_package()

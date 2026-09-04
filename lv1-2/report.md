@@ -220,33 +220,28 @@ average rate: 10.000
 ## 1. colcon build 성공 출력
 
 ```
-pa2@pa2-Legion-Pro-5-16IAX10:~/git/physicalai-lv1-assignments/lv1-2/ros2_ws$ ros2 pkg create turtle_cpp --build-type ament_cmake --dependencies rclcpp std_msgs
-going to create a new package
-package name: turtle_cpp
-destination directory: /home/pa2/git/physicalai-lv1-assignments/lv1-2/ros2_ws
-package format: 3
-version: 0.0.0
-description: TODO: Package description
-maintainer: ['pa2 <ef70024@gmail.com>']
-licenses: ['TODO: License declaration']
-build type: ament_cmake
-dependencies: ['rclcpp', 'std_msgs']
-creating folder ./turtle_cpp
-creating ./turtle_cpp/package.xml
-creating source and include folder
-creating folder ./turtle_cpp/src
-creating folder ./turtle_cpp/include/turtle_cpp
-creating ./turtle_cpp/CMakeLists.txt
+pa2@pa2-Legion-Pro-5-16IAX10:~/git/physicalai-lv1-assignments/lv1-2/ros2_ws$ colcon build --packages-select turtle_cpp
+Starting >>> turtle_cpp
+Finished <<< turtle_cpp [5.05s]                     
 
-[WARNING]: Unknown license 'TODO: License declaration'.  This has been set in the package.xml, but no LICENSE file has been created.
-It is recommended to use one of the ament license identitifers:
-Apache-2.0
-BSL-1.0
-BSD-2.0
-BSD-2-Clause
-BSD-3-Clause
-GPL-3.0-only
-LGPL-3.0-only
-MIT
-MIT-0
+Summary: 1 package finished [5.25s]
 ```
+
+
+## 2. rclpy 발행에서 rclcpp 구독으로 이어진 로그
+
+![alt text](image-2.png)
+
+## 3.
+
+rclcpp, rclpy 에 함수와 클래스가 제공된다.
+
+| | rclpy | rclcpp |
+| --- | --- | --- |
+| 노드 생성| class 노드이름(Node) | class 노드이름() : public rclcpp::Node |
+| 타이머| self.create_timer(주기, 콜백 함수) |this->creat_wall_timer(주기, 콜백 함수) |
+| 콜백 | class 내부 함수 | class 내부 public 멤버함수 |
+| 종료 | node.destroy(), rclpy.shutdown() |rclcpp::shutdown() |
+
+
+spin() 루프 진입 -> 이벤트(데이터, 타이머) -> executor(콜백) -> 콜백함수 실행 -> ... -> shutdown()

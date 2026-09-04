@@ -40,7 +40,7 @@ class DistancePublisher(Node):
 
         msg = Float32()
         msg.data = self.calc_distance(self.last_pose)
-
+        self.get_logger().info(f"[py publisher] distance: {msg.data:.2f}")
         self.publisher.publish(msg)
 
 def main(args=None):
