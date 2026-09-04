@@ -8,7 +8,7 @@
 | 카메라      | 720p60fps | 16.67ms | 1327mbps  | sensor_msgs/Image.msg     | RGB raw 8bit → 165.9 MB/s                    |
 | IMU      | 400hz     | 2.5ms   | 0.947mbps | sensor_msgs/Imu.msg       | float64 / 각속도, 선가속도, 쿼터니언 (공분산 포함, 296B/msg) |
 | encoder  | 2khz      | 0.5ms   | 1.536mbps | sensor_msg/JointState.msg | 4륜 (96B/msg)                                |
-| LTE      |           | 핑 1~5ms  |           |                           | 업/다운 95~100mbps                              |
+| LTE      |           | 핑 1~5ms  |     100mbps      |                           | 업/다운 95~100mbps                              |
 
 
 
@@ -27,10 +27,10 @@
 ## 2. 카메라 원시 영상 전송량
 
 초당 전송되는,
-- 카메라 raw 크기: 1280 × 720 × 3byte × 60fps = **165.9 MB/s** (= 1327 mbps ≈ 1.33 Gbps)
+- 카메라 raw 크기: 1280 × 720 × 3byte × 60fps = 165.9 MB/s 
 - LTE 상향 95~100 mbps = 11.9 ~ 12.5 MB/s
-- 165.9 / 12.5 ≈ **약 13~14배 초과** → raw 연속 전송은 성립하지 않음
-- 이벤트 프레임만 보내거나 압축(H.264 등)해서 대역폭 안으로 낮춰야 함
+- 165.9 / 12.5 - 13~14배 초과 → raw 연속 전송은 성립하지 않음
+- 단일 프레임만 보내거나 압축필요
 
 ## 3. 인지·판단·제어 계층 매핑과 주기표
 
@@ -40,7 +40,6 @@
 | 판단 | 목표 속도 결정, 지도 기반 경로, 배달 가능 여부                    | 목표속도 ~50–100Hz / 경로계획 ~1–10Hz                 |
 | 제어 | 모터 제어, 정지, 출발, 종료, 상태 변환                        | 2kHz                                         |
 
-**멀티레이트 흐름**: 제어(2kHz, 안쪽 빠른 루프) ≫ 인지(15~400Hz) ≫ 판단(1~10Hz, 바깥 느린 루프). 빠른 센서·제어 루프 위에 느린 판단 루프가 얹히는 구조.
 
 ## 4. Hard / Firm / Soft 분류표 — Hard 항목의 마감 초과 결과
 
@@ -54,9 +53,9 @@
 
 ## 5. 주기, 지연, 지터 구분
 
-- **주기(period)**: 같은 작업을 반복 실행하는 간격. 예) 모터 제어 루프가 2kHz면 0.5ms마다 한 번씩 목표 속도를 갱신한다.
-- **지연(latency)**: 입력이 들어와 그 결과가 나오기까지 걸리는 시간. 예) 라이다가 장애물을 스캔한 순간부터 모터가 감속 명령을 받기까지 걸리는 시간.
-- **지터(jitter)**: 주기(또는 지연)가 매번 흔들리는 편차. 예) 제어 루프가 이상적으론 0.5ms 주기인데 실제론 0.45~0.6ms로 들쭉날쭉한 그 폭.
+- 주기: 같은 작업을 반복 실행하는 간격.
+- 지연: 입력이 들어와 그 결과가 나오기까지 걸리는 시간.
+- 지터: 주기의 편차.
 
 # 문제 2. 원격 접속(SSH)과 센서 장치 경로 고정
 
@@ -71,7 +70,7 @@ pa2      pts/10       2026-08-26 16:37 (127.0.0.1)
 127.0.0.1 43914 127.0.0.1 22
 ```
 
-## 2.
+## 2. 개인키·공개키 중 서버에 등록하는 것
 
 공개키: 서버는 모두가 접속 할 수 있는 공개적인 공간 이기 때문에. 짝이 맞는 개인키만이 공개키를 맞춰 서버에 접속 할 수 있다.
 
@@ -98,17 +97,30 @@ test.txt                                      100%    0     0.0KB/s   00:00
 
 ## 4. 두 장치를 구분한 속성
 
-| | lidar | Imu |
-| --- | --- | --- |
-| KERNEL | loop7 | loop24 |
-| diskseq | 65 | 66 |
-| stat | 126 0 3536 10 | 136 0 2688 0 |
+규칙의 매칭 키는 **재연결해도 안 바뀌는 속성**이어야 한다. `KERNEL`(loopN)은 붙이는 순서에 따라 매번 달라지므로(→ 6번에서 imu가 loop24→loop22로 바뀜) 구분 기준이 될 수 없고, **`loop/backing_file`**(연결된 이미지 파일 경로)이 안정적인 식별자다. 크기도 미리 다르게 만들어(16M/24M) 보조 구분값이 된다.
 
-## 5. 
-| 속성|연산자 |설명 |
+| 속성 | lidar | Imu |
 | --- | --- | --- |
-| ATTR{loop/backing_file} | ==  조건부| 장치와 연결 되어 있는 파일을 선별 |
-| SYMLINK | += 추가 | /dev/ 뒤에 문자열 추가| 
+| **loop/backing_file** (안정) | /home/pa2/fake_sensors/lidar.img | /home/pa2/fake_sensors/imu.img |
+| 크기 (안정) | 16M | 24M |
+| KERNEL (가변) | loop7 | loop24 |
+| diskseq (가변) | 65 | 66 |
+
+## 5. udev 규칙 키 설명표
+
+| 키 | 뜻 |
+| --- | --- |
+| SUBSYSTEM | 장치가 속한 서브시스템으로 매칭 (예: block, tty) |
+| KERNEL | 커널이 붙인 원래 이름으로 매칭 (loop7 등, 순서에 따라 바뀜) |
+| ATTR{loop/backing_file} | 그 장치의 sysfs 속성값으로 매칭 (여기선 연결된 이미지 파일 경로) |
+| SYMLINK+= | /dev/ 아래에 고정 별칭(이름) 추가 |
+| MODE | 생성되는 장치 파일의 접근 권한 (예: 0660) |
+| GROUP | 장치 파일의 소유 그룹 (예: dialout) |
+
+**연산자 차이**
+- `==` : **비교(조건)** — 이 값과 같을 때만 규칙을 적용 (예: `ATTR{...}=="...img"`)
+- `=` : **대입(설정/덮어쓰기)** — 속성·이름을 이 값으로 지정 (예: `MODE="0660"`)
+- `+=` : **추가** — 기존 값을 지우지 않고 덧붙임 (SYMLINK은 여러 개 가능하므로 `+=`)
 
 
 ## 6. 재연결 후 확인
@@ -118,9 +130,20 @@ lrwxrwxrwx 1 root root 6 Aug 26 17:41 /dev/robot_imu -> loop22
 lrwxrwxrwx 1 root root 5 Aug 26 17:39 /dev/robot_lidar -> loop7
 ```
 
-## 7.
+KERNEL 이름은 바뀌었지만, 규칙이 `loop/backing_file`로 매칭하므로 고정 이름은 유지.
 
-MODE
+## 7. 실제 USB 시리얼 센서용 규칙 초안과 구분 근거
+
+USB 는 loop 가 아니라 `tty` 이므로, `SUBSYSTEM=="tty"`와 USB 식별값(`ATTRS{idVendor}`·`ATTRS{idProduct}`)으로 매칭.
+idVendor, idProduct는 USB 장치에 있으므로 `ATTRS{...}` 사용
+
+```bash
+# 라이다
+SUBSYSTEM=="tty", ATTRS{idVendor}=="10c4", ATTRS{idProduct}=="ea60", SYMLINK+="robot_lidar"
+
+# IMU
+SUBSYSTEM=="tty", ATTRS{idVendor}=="10c4", ATTRS{idProduct}=="ea70", SYMLINK+="robot_imu"
+```
 
 # 문제3.
 
@@ -149,12 +172,12 @@ pa2@pa2-Legion-Pro-5-16IAX10:~/git/physicalai-lv1-assignments$ git merge branch-
 ```
 기존에 있던(먼저 PR된) 커밋과 이후의 커밋 둘중 하나를 선택.
 
-## 4. merge/ rebase
+## 4. merge 방식 이력 그래프 / rebase 방식 이력 그래프
 
 merge 는 브런치 에서 main으로 붙는 모양이지만, rebase 는 이전의 커밋 들이 main 의 업스트림 위로 올라 오면서 같은 선상에있는것 처럼 보인다.
 ![alt text](image-2.png)
 
-## 5.
+## 5. 언제 merge 를, 언제 rebase 를 쓸지
 
 일반 적인 경우 merge를 쓰지만, 히스토리를 정리 하고 싶거나 다른 브런치의 수정 사항을 비교하며 테스트 해야할때 rebase로 새로 가져오면 충둘을 방지 할 수 있다.
 
