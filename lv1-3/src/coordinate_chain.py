@@ -44,17 +44,17 @@ class CoordinateChain:
 def default_chain():
     chain = CoordinateChain()
 
-    R_00 = rot_z(np.deg2rad(30))
-    T_00 = np.array([0.3,0.0,0.4])
+
+    R_00 = rot_z(np.deg2rad(22.5))
+    T_00 = np.array([0.35, 0.05, 0.45])
     T_bl = make_T(R_00, T_00)
     chain.add("base", "link", T_bl)
 
-    R_10 = rot_y(np.rad2deg(-20))
-    R_11 = rot_x(np.rad2deg(90))
-    T_10 = np.array([0.1, 0.05, 0.15])
-    T_lc = make_T(R_11@R_10, T_10)
-    chain.add("link", "camera", T_lc)                
-    
+    R_lc = rot_y(np.deg2rad(-22.5)) @ rot_x(np.deg2rad(67.5))
+    T_10 = np.array([0.12, 0.04, 0.18])
+    T_lc = make_T(R_lc, T_10)
+    chain.add("link", "camera", T_lc)
+
     return chain
 
 def camera_point_to_base(p_cam, chain):
@@ -62,4 +62,3 @@ def camera_point_to_base(p_cam, chain):
 
 def base_point_to_camera(p_base, chain):
     return chain.transform("camera", "base", p_base)
-    raise NotImplementedError

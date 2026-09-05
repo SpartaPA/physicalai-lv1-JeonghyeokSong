@@ -2,13 +2,11 @@ from __future__ import annotations
 import numpy as np
 
 
-PI = 3.14159265359 
-
 def rad2deg(rad) -> float:
-    return rad * (180.0 / PI)
+    return rad * (180.0 /  np.pi)
 
 def deg2rad(deg) -> float:
-    return deg * (PI / 180.0)
+    return deg * (np.pi / 180.0)
 
 def vector_check(v):
     l = len(v)
@@ -26,7 +24,6 @@ def dot(a, b) -> float:
     bz = b[2]
     
     return ax*bx + ay*by + az*bz
-
 
 def norm(v) -> float:
     """노름"""
@@ -46,13 +43,13 @@ def normalize(v, eps=1e-12) -> np.array:
     n = norm(v)
 
     if n < eps:
-        print("길이가 0인 벡터는 Nomalize 할 수 없습니다.")
-        return None
+    
+        raise ValueError("길이가 0인 벡터는 Nomalize 할 수 없습니다.")
     else:
         return np.array([vx/n,vy/n,vz/n])
 
 
-def angle_between(a, b, degrees=False) -> float:
+def angle_between(a, b, degrees=True) -> float:
     """사이각"""
     na = normalize(a)
     nb = normalize(b)
@@ -103,9 +100,12 @@ def skew(a) -> np.array:
 
 def plane_normal(p1, p2, p3):
     """평면법선"""
-
-    u1 = normalize(p2 - p1)
-    u2 = normalize(p3 - p1)
+    p1 = np.asarray(p1, dtype=float)
+    p2 = np.asarray(p2, dtype=float)
+    p3 = np.asarray(p3, dtype=float)
+    
+    u1 = p2 - p1
+    u2 = p3 - p1
 
     return normalize(cross(u1,u2))
 
