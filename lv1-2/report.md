@@ -427,3 +427,435 @@ Goal finished with status: SUCCEEDED
 ## 6. 인터페이스를 별도 패키지로 분리하는 이유
 
 여러 노드가 하나의 인터페이스를 사용할 수 있기 때문에. 노드랑 같이 패키징 된다면 다른 노드들이 인터페이스를 사용 할때 불필요한 패키지에 의존 하게 된다.
+# 문제 7. 
+
+## 1. QoS 비호환 시 topic info --verbose 출력
+
+```
+ros2 topic info -v /turtle_distance
+Type: std_msgs/msg/Float32
+
+Publisher count: 1
+
+Node name: qos_sensor_publisher
+Node namespace: /
+Topic type: std_msgs/msg/Float32
+Endpoint type: PUBLISHER
+GID: 01.0f.1d.e2.42.22.2c.26.00.00.00.00.00.00.12.03.00.00.00.00.00.00.00.00
+QoS profile:
+  Reliability: BEST_EFFORT
+  History (Depth): UNKNOWN
+  Durability: VOLATILE
+  Lifespan: Infinite
+  Deadline: Infinite
+  Liveliness: AUTOMATIC
+  Liveliness lease duration: Infinite
+
+Subscription count: 1
+
+Node name: turtle_distance_subscriber
+Node namespace: /
+Topic type: std_msgs/msg/Float32
+Endpoint type: SUBSCRIPTION
+GID: 01.0f.1d.e2.41.26.dc.56.00.00.00.00.00.00.11.04.00.00.00.00.00.00.00.00
+QoS profile:
+  Reliability: RELIABLE
+  History (Depth): UNKNOWN
+  Durability: VOLATILE
+  Lifespan: Infinite
+  Deadline: Infinite
+  Liveliness: AUTOMATIC
+  Liveliness lease duration: Infinite
+```
+
+## 2. 연결되지 않은 원인
+
+`qos_sensor_publisher` -> `Reliability: BEST_EFFORT`
+`turtle_distance_subscriber` -> `Reliability: RELIABLE`
+
+구독자를 `--ros-args -p reliability:=best_effort` 로 실행
+
+```
+[INFO] [1788738300.444147585] [qos_subscriber]: qos_subscriber 시작: topic=turtle_distance type=Float32 reliability=best_effort durability=volatile depth=10 callback_delay=0.0s
+[INFO] [1788738301.528846178] [qos_subscriber]: #1 수신: 7.841
+```
+
+## 3. Transient Local 과 Volatile 수신 결과 비교
+
+**Transient Local**
+```
+[INFO] [1788739255.388249467] [qos_subscriber]: qos_subscriber 시작: topic=waypoints type=WaypointList reliability=reliable durability=transient_local depth=10 callback_delay=0.0s
+[INFO] [1788739255.519851757] [qos_subscriber]: #1 WaypointList: 4개 ['corner_A', 'corner_B', 'corner_C', 'corner_D'] frame_id=world
+[INFO] [1788739257.380675578] [qos_subscriber]: [통계] 지난 2초 처리 1개 (누적 1개)
+[INFO] [1788739259.380743754] [qos_subscriber]: [통계] 지난 2초 처리 0개 (누적 1개) — 0개라면 QoS 비호환이나 발행자 부재를 의심
+```
+
+**Volatile**
+```
+[INFO] [1788739338.867373518] [qos_subscriber]: qos_subscriber 시작: topic=turtle_distance type=Float32 reliability=reliable durability=volatile depth=10 callback_delay=0.0s
+[INFO] [1788739340.863367423] [qos_subscriber]: [통계] 지난 2초 처리 0개 (누적 0개) — 0개라면 QoS 비호환이나 발행자 부재를 의심
+```
+
+## 4. History depth 1 에서의 메시지 누락 관찰
+
+publisher
+- 10.Hz
+
+subscriber
+- callback_delay = 0.5
+
+발행은 1초에 10번 구독은 1초에 2번
+
+2/10 = 20% 보존, 80% 누락
+
+
+```
+[INFO] [1788742058.059440747] [qos_subscriber]: qos_subscriber 시작: topic=turtle_distance type=Float32 reliability=reliable durability=volatile depth=1 callback_delay=0.5s
+[INFO] [1788742058.095492708] [qos_subscriber]: #1 수신: 7.841
+[INFO] [1788742058.596786185] [qos_subscriber]: #2 수신: 7.841
+[INFO] [1788742059.100653753] [qos_subscriber]: #3 수신: 7.841
+[INFO] [1788742059.602259954] [qos_subscriber]: #4 수신: 7.841
+[INFO] [1788742060.103939576] [qos_subscriber]: [통계] 지난 2초 처리 4개 (누적 4개)
+[INFO] [1788742060.104398637] [qos_subscriber]: #5 수신: 7.841
+[INFO] [1788742060.605826105] [qos_subscriber]: #6 수신: 7.841
+[INFO] [1788742061.106782799] [qos_subscriber]: #7 수신: 7.841
+[INFO] [1788742061.608339520] [qos_subscriber]: #8 수신: 7.841
+[INFO] [1788742062.109894172] [qos_subscriber]: [통계] 지난 2초 처리 4개 (누적 8개)
+```
+
+## 5. 토픽 5종 QoS 설계표
+
+설계 기준: **데이터 성격**(연속 스트림 / 일회성 명령 / 설정성 데이터)으로 Reliability·Durability를 정하고, 발행-구독이 요청-제공 호환을 깨지 않도록 맞춘다.
+
+| 토픽 | Reliability | Durability | 근거 |
+|---|---|---|---|
+| `/turtle1/pose` | BEST_EFFORT | VOLATILE | 거북이 자세를 주기적으로 전송하는 상태 스트림. 한 프레임 놓쳐도 다음 값이 곧 오니 재전송 불필요. 늦게 뜬 노드가 과거 자세를 받을 이유도 없음x |
+| `/turtle1/cmd_vel` | RELIABLE | VOLATILE | 구동 명령 — 유실되면 의도한 거동이 어긋날 수 있어 재전송으로 보장. 과거 명령은 무의미하고 그 순간 유효한 명령만 필요 |
+| `/waypoints` | RELIABLE | TRANSIENT_LOCAL | 한 번 정하면 계속 유효한 설정. 경유점 하나라도 빠지면 경로가 틀어지므로 RELIABLE, 늦게 합류한 노드도 마지막 목록을 받아함 |
+| `/turtle_distance` | BEST_EFFORT | VOLATILE | pose에서 파생한 주기 스트림. 주기적으로 갱신 |
+| `/diagnostics` | RELIABLE | VOLATILE | 노드 상태,오류 보고.놓치면 문제 감지를 놓치므로 RELIABLE. 현재 상태 보고라 과거 진단은 필요x |
+
+
+# 문제 8.
+
+## 1. colcon build 빌드 순서 로그
+
+`colcon list --topological-order`
+
+turtle_py가 turtle_interfaces 에 의존 해야 하기 때문에 먼저 빌드 된다.
+
+```
+turtle_cpp	src/turtle_cpp	(ros.ament_cmake)
+turtle_interfaces	src/turtle_interfaces	(ros.ament_cmake)
+turtle_py	src/turtle_py	(ros.ament_python)
+```
+
+## 2. package.xml 의존성 선언 부분
+
+```
+  <depend>rclpy</depend>
+  <depend>std_msgs</depend>
+  <depend>geometry_msgs</depend>
+  <depend>turtlesim</depend>
+  <depend>std_srvs</depend>
+  <depend>turtle_interfaces</depend>
+  <depend>action_msgs</depend>
+  <depend>rcl_interfaces</depend>
+  
+  <exec_depend>ros2launch</exec_depend>
+```
+
+## 3. setup.py entry_points 
+
+```
+entry_points={
+        'console_scripts': [
+            'distance_publisher = turtle_py.distance_publisher:main',
+            'distance_watcher = turtle_py.distance_watcher:main',
+            'driver_square = turtle_py.driver_square:main',
+            'polygon_action_server = turtle_py.polygon_action_server:main',
+            'polygon_action_client = turtle_py.polygon_action_client:main',
+            'builtin_service_client = turtle_py.builtin_service_client:main'
+        ],
+    },
+```
+
+## 4. source 전 실행 결과와 source 후 실행 결과
+
+`$AMENT_PREFIX_PATH`
+- ros2 가 패키지를 찾는 경로
+`$PYTHONPATH`
+- 파이선이 모듈을 인식 하는 경로
+
+위 변수들을 `source install/setup.bash` 로 현재 터미널에 install 경로를 추가해 빌드된 패키지를 인식 할 수 있게 한다.
+
+
+
+`source install/setup.bash` 전
+```bash
+pa2@pa2-Legion-Pro-5-16IAX10:~/git/physicalai-lv1-JeonghyeokSong/lv1-2/ros2_ws$ ros2 run turtle_py distance_publisher
+Package 'turtle_py' not found
+```
+
+`source install/setup.bash` 후
+```bash
+pa2@pa2-Legion-Pro-5-16IAX10:~/git/physicalai-lv1-JeonghyeokSong/lv1-2/ros2_ws$ source install/setup.bash
+pa2@pa2-Legion-Pro-5-16IAX10:~/git/physicalai-lv1-JeonghyeokSong/lv1-2/ros2_ws$ ros2 run turtle_py distance_publisher
+2026-09-07 11:48:36.965 [RTPS_TRANSPORT_SHM Error] Failed init_port fastrtps_port9413: open_and_lock_file failed -> Function open_port_internal
+[INFO] [1788749317.088649215] [distance_publisher]: [py publisher] distance: 7.84
+[INFO] [1788749317.181596395] [distance_publisher]: [py publisher] distance: 7.84
+[INFO] [1788749317.281559315] [distance_publisher]: [py publisher] distance: 7.84
+```
+
+## 5. src/build/install/log 의 역할
+
+- src: 노드의 로직이 정의되어 있는 소스 코드 파일
+- build: 빌드 캐시 데이터
+- install: 빌드의 완성본
+- log: 빌드 로그
+
+# 문제 9.
+
+## 1. ros2 launch 실행 출력
+
+```bash
+pa2@pa2-Legion-Pro-5-16IAX10:~/git/physicalai-lv1-JeonghyeokSong/lv1-2/ros2_ws$ ros2 launch turtle_py turtle_system.launch.py
+[INFO] [launch]: All log files can be found below /home/pa2/.ros/log/2026-09-07-13-39-15-268074-pa2-Legion-Pro-5-16IAX10-671814
+[INFO] [launch]: Default logging verbosity is set to INFO
+[INFO] [turtlesim_node-1]: process started with pid [671815]
+[INFO] [distance_publisher-2]: process started with pid [671817]
+[INFO] [distance_watcher-3]: process started with pid [671819]
+[INFO] [polygon_action_server-4]: process started with pid [671821]
+[turtlesim_node-1] Warning: Ignoring XDG_SESSION_TYPE=wayland on Gnome. Use QT_QPA_PLATFORM=wayland to run on Wayland anyway.
+[turtlesim_node-1] [INFO] [1788755955.382215010] [turtlesim]: Starting turtlesim with node name /turtlesim  #turtlesim
+[turtlesim_node-1] [INFO] [1788755955.384298141] [turtlesim]: Spawning turtle [turtle1] at x=[5.544445], y=[5.544445], theta=[0.000000] 
+[polygon_action_server-4] [INFO] [1788755955.514388795] [polygon_action_server]: polygon_action_server 시작: 액션 /draw_polygon 대기 중 #polygon_action_server
+[distance_publisher-2] [INFO] [1788755955.582903638] [distance_publisher]: [py publisher] distance: 7.84 #distance_publisher
+[distance_watcher-3] [WARN] [1788755955.594051430] [distance_watcher]: Distance 7.84 > 2.50! #distance_watcher
+
+```
+
+## 2. ros2 node list 결과 — 동시 실행된 노드
+
+```bash
+pa2@pa2-Legion-Pro-5-16IAX10:~/git/physicalai-lv1-JeonghyeokSong/lv1-2/ros2_ws$ ros2 node list
+/distance_publisher
+/distance_watcher
+/polygon_action_server
+/turtlesim
+```
+
+## 3. ros2 param get 으로 확인한 주입 값
+
+```bash
+pa2@pa2-Legion-Pro-5-16IAX10:~/git/physicalai-lv1-JeonghyeokSong/lv1-2/ros2_ws$ ros2 param get distance_publisher publish_rate
+Double value is: 10.0
+pa2@pa2-Legion-Pro-5-16IAX10:~/git/physicalai-lv1-JeonghyeokSong/lv1-2/ros2_ws$ ros2 param get distance_watcher warn_distance
+Double value is: 2.5
+```
+
+## 4. YAML 값 변경 전후 동작 차이
+
+```yaml
+distance_watcher:
+  ros__parameters:
+    warn_distance: 2.5
+```
+
+```bash
+[distance_watcher-3] [WARN] [1788758685.640892813] [distance_watcher]: Distance 7.84 > 2.50!
+```
+
+```yaml
+distance_watcher:
+  ros__parameters:
+    warn_distance: 5.0
+```
+
+```
+[distance_watcher-3] [WARN] [1788758511.303079808] [distance_watcher]: Distance 7.84 > 5.00!
+```
+
+## 5. 네임스페이스 적용 후 topic list
+
+네임 스페이스 설정
+remap으로 연결 한다.
+```python
+publisher2 = Node(
+    package='turtle_py',
+    executable='distance_publisher',
+    name='distance_publisher',
+    namespace='turtle2',
+    remappings=[
+        ('/turtle1/pose', '/turtle2/pose'),
+        ('/turtle_distance', 'turtle_distance'),
+    ],
+    parameters=[params],
+    output='screen',
+)
+```
+
+네임스페이스 적용 후
+node list, ropic list
+
+```bash
+pa2@pa2-Legion-Pro-5-16IAX10:~/git/physicalai-lv1-JeonghyeokSong/lv1-2/ros2_ws$ ros2 node list
+/distance_publisher
+/distance_watcher
+/polygon_action_server
+/turtle2/distance_publisher
+/turtlesim
+pa2@pa2-Legion-Pro-5-16IAX10:~/git/physicalai-lv1-JeonghyeokSong/lv1-2/ros2_ws$ ros2 topic list
+/parameter_events
+/rosout
+/turtle1/cmd_vel
+/turtle1/color_sensor
+/turtle1/pose
+/turtle2/cmd_vel
+/turtle2/color_sensor
+/turtle2/pose
+/turtle2/turtle_distance
+/turtle_distance
+```
+
+
+# 문제 10.
+
+## 1. rqt_graph 캡처
+
+![alt text](image-3.png)
+
+점검 단계:
+1. node, topic 존재 유무
+2. 실제로 발행 되고 있는지
+3. 서로 연결이 되었는지
+4. 이름, 타입이 일치 하는지
+5. 노드가 잘 짜야져 있는지
+  
+
+
+sim 을 멈춰도 노드의 토픽은 마지막 데이터로 계속 발행된다.
+```bash
+[INFO] [1788764073.135339849] [distance_publisher]: [py publisher] distance: 9.02
+[INFO] [1788764073.235262877] [distance_publisher]: [py publisher] distance: 9.06
+[INFO] [1788764073.335357563] [distance_publisher]: [py publisher] distance: 9.10
+[INFO] [1788764073.435362018] [distance_publisher]: [py publisher] distance: 9.13
+[INFO] [1788764073.535431532] [distance_publisher]: [py publisher] distance: 9.15
+[INFO] [1788764073.635443933] [distance_publisher]: [py publisher] distance: 9.17
+[INFO] [1788764073.735434816] [distance_publisher]: [py publisher] distance: 9.19
+[INFO] [1788764073.836650499] [distance_publisher]: [py publisher] distance: 9.19
+[INFO] [1788764073.935472736] [distance_publisher]: [py publisher] distance: 9.19
+[INFO] [1788764074.035724956] [distance_publisher]: [py publisher] distance: 9.19
+[INFO] [1788764074.135581001] [distance_publisher]: [py publisher] distance: 9.19
+[INFO] [1788764074.235541759] [distance_publisher]: [py publisher] distance: 9.19
+[INFO] [1788764074.335806939] [distance_publisher]: [py publisher] distance: 9.19
+```
+
+hz 도 그에 따라서 계속 측정 되는 모습
+```bash
+average rate: 10.000
+	min: 0.070s max: 0.130s std dev: 0.00105s window: 6271
+average rate: 10.000
+	min: 0.070s max: 0.130s std dev: 0.00104s window: 6281
+average rate: 10.000
+	min: 0.070s max: 0.130s std dev: 0.00104s window: 6292
+average rate: 10.000
+	min: 0.070s max: 0.130s std dev: 0.00104s window: 6303
+average rate: 10.000
+	min: 0.070s max: 0.130s std dev: 0.00104s window: 6314
+average rate: 10.000
+	min: 0.070s max: 0.130s std dev: 0.00104s window: 6324
+average rate: 10.000
+	min: 0.070s max: 0.130s std dev: 0.00104s window: 6334
+```
+
+## 2. RViz2 TF + 경유점 마커 캡처
+
+![alt text](image-4.png)
+
+## 3. ros2 bag play 재생 중 구독자 로그
+
+`ros2 run turtle_py distance_watcher`
+
+```
+[WARN] [1788772856.520773111] [distance_watcher]: Distance 3.90 > 2.50!
+[WARN] [1788772856.620422619] [distance_watcher]: Distance 4.12 > 2.50!
+[WARN] [1788772856.720932913] [distance_watcher]: Distance 4.31 > 2.50!
+```
+
+`ros2 topic echo /turtle/pose`
+```
+---
+x: 2.5929181575775146
+y: 4.255012512207031
+theta: 1.055999994277954
+linear_velocity: 0.0
+angular_velocity: 0.0
+---
+x: 2.5929181575775146
+y: 4.255012512207031
+theta: 1.055999994277954
+linear_velocity: 0.0
+angular_velocity: 0.0
+---
+x: 2.5929181575775146
+y: 4.255012512207031
+theta: 1.055999994277954
+linear_velocity: 0.0
+angular_velocity: 0.0
+---
+```
+
+## 4. pytest 통과 출력
+
+```bash
+colcon test --packages-select turtle_py --pytest-args -k turtle_equation --event-handlers console_direct+
+Starting >>> turtle_py
+platform linux -- Python 3.10.12, pytest-6.2.5, py-1.10.0, pluggy-0.13.0
+cachedir: /home/pa2/git/physicalai-lv1-JeonghyeokSong/lv1-2/ros2_ws/build/turtle_py/.pytest_cache
+rootdir: /home/pa2/git/physicalai-lv1-JeonghyeokSong/lv1-2/ros2_ws/src/turtle_py
+plugins: ament-lint-0.12.15, launch-testing-ros-0.19.14, ament-copyright-0.12.15, ament-pep257-0.12.15, launch-testing-1.0.14, ament-flake8-0.12.15, ament-xmllint-0.12.15, cov-3.0.0, colcon-core-0.21.1
+collecting ...                          
+collected 9 items / 3 deselected / 6 selected                                  
+
+test/test_turtle_equation.py ......                                      [100%]
+
+- generated xml file: /home/pa2/git/physicalai-lv1-JeonghyeokSong/lv1-2/ros2_ws/build/turtle_py/pytest.xml -
+Finished <<< turtle_py [0.99s]          
+
+Summary: 1 package finished [1.17s]
+```
+
+## 5. 함수를 틀리게 바꿨을 때 실패 출력
+
+```bash
+colcon test --packages-select turtle_py --pytest-args -k turtle_equation --event-handlers console_direct+
+Starting >>> turtle_py
+platform linux -- Python 3.10.12, pytest-6.2.5, py-1.10.0, pluggy-0.13.0
+cachedir: /home/pa2/git/physicalai-lv1-JeonghyeokSong/lv1-2/ros2_ws/build/turtle_py/.pytest_cache
+rootdir: /home/pa2/git/physicalai-lv1-JeonghyeokSong/lv1-2/ros2_ws/src/turtle_py
+plugins: ament-lint-0.12.15, launch-testing-ros-0.19.14, ament-copyright-0.12.15, ament-pep257-0.12.15, launch-testing-1.0.14, ament-flake8-0.12.15, ament-xmllint-0.12.15, cov-3.0.0, colcon-core-0.21.1
+collecting ...                          
+collected 9 items / 3 deselected / 6 selected                                  
+
+test/test_turtle_equation.py .F....                                      [100%]
+
+__________________________ test_reached[0.3-0.3-True] __________________________
+test/test_turtle_equation.py:13: in test_reached
+    assert reached(dist, tol) == expected
+E   assert False == True
+E    +  where False = reached(0.3, 0.3)
+- generated xml file: /home/pa2/git/physicalai-lv1-JeonghyeokSong/lv1-2/ros2_ws/build/turtle_py/pytest.xml -
+FAILED test/test_turtle_equation.py::test_reached[0.3-0.3-True] - assert Fals...
+Finished <<< turtle_py [1.09s]  [ with test failures ]
+
+Summary: 1 package finished [1.50s]
+  1 package had test failures: turtle_py
+```
+
+## 6. 예외 처리·logging 동작 확인
+
+```bash
+ros2 run turtle_py distance_publisher --ros-args -p publish_rate:=0.0
+[WARN] [1788776707.665874964] [distance_publisher]: publish_rate must be > 0, setting to default 10.0
+```

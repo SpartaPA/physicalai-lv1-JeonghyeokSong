@@ -1,0 +1,19 @@
+distance_publisher:
+  ros__parameters:
+    publish_rate: 10.0
+
+distance_watcher:
+  ros__parameters:
+    warn_distance: 2.5
+
+polygon_action_server:
+  ros__parameters:
+    linear_speed: 1.0
+    angular_speed: 1.0
+    control_rate: 20.0
+    segment_timeout_factor: 3.0
+
+turtle2:
+  distance_publisher:
+    ros__parameters:
+      publish_rate: 5.0

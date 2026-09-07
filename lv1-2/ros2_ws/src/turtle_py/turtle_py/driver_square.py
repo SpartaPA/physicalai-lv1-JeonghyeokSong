@@ -57,9 +57,6 @@ class DriverSquare(Node):
                     self.x0 = None
                     self.side += 1
 
-        
-
-
         self.get_logger().info(
     f"[{self.phase}] tick: {self.tick} d: {d:.2f}, side: {self.side})")
         
@@ -74,4 +71,3 @@ def main(args=None):
         node.destroy_node()
         if rclpy.ok():
             rclpy.shutdown()
-
