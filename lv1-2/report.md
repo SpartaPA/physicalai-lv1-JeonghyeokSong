@@ -245,3 +245,185 @@ rclcpp, rclpy 에 함수와 클래스가 제공된다.
 
 
 spin() 루프 진입 -> 이벤트(데이터, 타이머) -> executor(콜백) -> 콜백함수 실행 -> ... -> shutdown()
+
+
+# 문제 5.
+
+## 1. 호출한 내장 서비스와 타입
+
+클라이언트에서 순서대로 호출한 4개 서비스. 타입은 `ros2 service type <이름>` 으로 확인했다.
+
+| 서비스 | 타입 | 요청 값 | 결과 |
+| --- | --- | --- | --- |
+| /turtle1/teleport_absolute | turtlesim/srv/TeleportAbsolute | x=6.5, y=5.5, theta=0.0 | 지정 절대 좌표로 순간이동 |
+| /turtle1/set_pen | turtlesim/srv/SetPen | r=255, g=0, b=0, width=4, off=0 | 펜을 빨강·굵기 4로 설정 |
+| /spawn | turtlesim/srv/Spawn | x=2.0, y=2.0, theta=0.0, name=turtle2 | 새 거북이 이름 반환 |
+| /clear | std_srvs/srv/Empty |  | 궤적 삭제 |
+
+teleport·set_pen·spawn 은 turtlesim 전용 타입(`turtlesim/srv/*`)이고, clear 는 요청·응답 필드가 모두 없는 공용 타입 `std_srvs/srv/Empty` 다.
+
+
+## 2. Service 요청·응답 로그
+
+teleport_absolute x = 6.5 로 이동
+```
+ros2 service call /turtle1/teleport_absolute turtlesim/srv/TeleportAbsolute "{x: 6.5, y: 5.5, theta: 0.0}"
+requester: making request: turtlesim.srv.TeleportAbsolute_Request(x=6.5, y=5.5, theta=0.0)
+
+response:
+turtlesim.srv.TeleportAbsolute_Response()
+```
+
+## 3. 데드락이 생기는 이유
+
+노드 내부 executor(싱글 스레드 - 한번에 하나 실행) 에서 발행, 구독, 서비스 액션의 콜백을 다루는데, executor 가 서비스의 응답을 기다리고 있고 그 서비스는 콜백의 응답을 기다리고 있을때 노드가 멈춰 버린다.
+
+## 4. rotate_absolute 피드백 수신 로그 
+
+```
+ros2 run turtle_examples ex05_rotate_absolute_client
+[INFO] [1788687276.054480744] [rotate_absolute_client]: goal 전송: theta = 1.571 rad (현재 theta = None)
+[INFO] [1788687276.058677480] [rotate_absolute_client]: goal 수락됨 — 피드백 대기
+[INFO] [1788687276.059330280] [rotate_absolute_client]: 피드백: remaining = +1.571 rad
+[INFO] [1788687276.314981763] [rotate_absolute_client]: 피드백: remaining = +1.315 rad
+[INFO] [1788687276.570805230] [rotate_absolute_client]: 피드백: remaining = +1.059 rad
+[INFO] [1788687276.827257632] [rotate_absolute_client]: 피드백: remaining = +0.803 rad
+[INFO] [1788687277.082700713] [rotate_absolute_client]: 피드백: remaining = +0.547 rad
+[INFO] [1788687277.338853340] [rotate_absolute_client]: 피드백: remaining = +0.291 rad
+[INFO] [1788687277.594770073] [rotate_absolute_client]: 피드백: remaining = +0.035 rad
+[INFO] [1788687277.611733241] [rotate_absolute_client]: 결과 수신: status=SUCCEEDED, delta=-1.552 rad, 현재 theta = 1.5520000457763672
+```
+
+## 5. 취소 요청 처리 로그
+
+```
+ ros2 run turtle_examples ex05_rotate_absolute_client --theta 0 --cancel-after 1.0
+[INFO] [1788688010.187770394] [rotate_absolute_client]: goal 전송: theta = 0.000 rad (현재 theta = None)
+[INFO] [1788688010.203020889] [rotate_absolute_client]: 피드백: remaining = -3.136 rad
+[INFO] [1788688010.203444016] [rotate_absolute_client]: goal 수락됨 — 피드백 대기
+[INFO] [1788688010.459136741] [rotate_absolute_client]: 피드백: remaining = -2.880 rad
+[INFO] [1788688010.714585085] [rotate_absolute_client]: 피드백: remaining = -2.624 rad
+[INFO] [1788688010.970535866] [rotate_absolute_client]: 피드백: remaining = -2.368 rad
+[WARN] [1788688011.204395943] [rotate_absolute_client]: 취소 요청 전송 (요청 시점 theta = 2.128 rad)
+[WARN] [1788688011.211161590] [rotate_absolute_client]: 취소 수락됨 (서버가 중단 처리 중). 취소 시점 theta = 2.128 rad
+[INFO] [1788688011.212255131] [rotate_absolute_client]: 결과 수신: status=CANCELED, delta=+0.992 rad, 현재 theta = 2.128000020980835
+```
+
+## 6. 통신 패턴 설계표
+
+| 기능 | 선택한 모델 | 근거 |
+| --- | --- | --- |
+| 자세 스트리밍 | Topic | 계속 흐르는 데이터를 여러 구독자에 브로드캐스트, 응답 불필요. |
+| 순간이동 | Service | 즉시 끝나는 1회 요청-응답. |
+| 펜 색 설정 | Service | 즉시 끝나는 설정 변경 요청-응답. |
+| 거북이 추가 | Service | 1회 요청 후 이름을 응답으로 받고 즉시 완료. |
+| 목표 각도까지 회전 | Action | 오래 걸리는 작업 + 피드백(remaining) + 취소 필요. |
+
+계속 흐르는 데이터는 Topic,
+짧게 끝나는 요청,응답은 Service,
+오래 걸리며 피드백,취소가 필요한 작업은 Action.
+
+# 문제 6.
+
+## 1. ros2 interface show turtle_interfaces/msg/WaypointList 출력
+
+```
+# 문제 6 — 경유점 목록. "중첩(다른 메시지를 필드로)" 과 "배열" 을 모두 사용합니다.
+#
+# 다른 패키지의 메시지를 쓸 때는 "패키지/타입" 으로 적습니다 (std_msgs/Header).
+# 같은 패키지의 메시지는 패키지 이름 없이 타입 이름만 적어도 됩니다 (Waypoint).
+# Waypoint[] 처럼 [] 를 붙이면 가변 길이 배열이 됩니다. (고정 길이는 Waypoint[4])
+
+std_msgs/Header header   # stamp(발행 시각) + frame_id(좌표계 이름, 여기서는 "world")
+	builtin_interfaces/Time stamp
+		int32 sec
+		uint32 nanosec
+	string frame_id
+Waypoint[] waypoints     # 경유점 배열 — 문제 6 에서는 4개 이상을 채워 발행합니다
+	float64 x            # 경유점 x 좌표 [m] (turtlesim 좌표계, 0 ~ 1
+	float64 y            #
+	float32 tolerance    # 도달 판정 허용 오차 [m] — 이 거리 이내면 "도달" 로 봅
+	string  label        #
+
+```
+
+## 2. ros2 topic echo /waypoints 출력 
+
+```
+ros2 topic echo /waypoints
+header:
+  stamp:
+    sec: 1788701530
+    nanosec: 2251524
+  frame_id: world
+waypoints:
+- x: 2.0
+  y: 2.0
+  tolerance: 0.30000001192092896
+  label: corner_A
+- x: 9.0
+  y: 2.0
+  tolerance: 0.30000001192092896
+  label: corner_B
+- x: 9.0
+  y: 9.0
+  tolerance: 0.30000001192092896
+  label: corner_C
+- x: 2.0
+  y: 9.0
+  tolerance: 0.30000001192092896
+  label: corner_D
+---
+```
+
+## 3. DrawPolygon 피드백 로그
+
+```
+ros2 action send_goal /draw_polygon turtle_interfaces/action/DrawPolygon "{sides: 3, side_length: 2.0}" --feedback
+Waiting for an action server to become available...
+Sending goal:
+     sides: 3
+side_length: 2.0
+
+Goal accepted with ID: c9781cda008944dcab7576f99eb1cd80
+
+Feedback:
+    completed_sides: 1
+progress: 0.3333333432674408
+
+Feedback:
+    completed_sides: 2
+progress: 0.6666666865348816
+
+Feedback:
+    completed_sides: 3
+progress: 1.0
+
+Result:
+    total_distance: 6.029753619544511
+
+Goal finished with status: SUCCEEDED
+
+```
+
+## 4. 삼각형·오각형·팔각형 궤적 캡처 (이미지 3장)
+
+![alt text](image-3.png)
+![alt text](image-4.png)
+![alt text](image-5.png)
+
+## 5. 액션 취소 처리 결과
+
+```
+[INFO] [1788703233.707537550] [polygon_action_server]: 다각형 완성: 총 이동 거리 10.04 m
+[INFO] [1788703263.519158583] [polygon_action_server]: goal 수락: sides=8, side_length=2.0
+[INFO] [1788703267.891848809] [polygon_action_server]: 변 1/8 완료 (누적 2.01 m)
+[INFO] [1788703272.312516957] [polygon_action_server]: 변 2/8 완료 (누적 4.02 m)
+[WARN] [1788703272.313003136] [polygon_action_server]: 취소 요청 수신 — 실행 루프에서 즉시 정지합니다
+[WARN] [1788703272.364075489] [polygon_action_server]: 취소됨 — 정지. 그때까지 이동 거리 4.02 m
+
+```
+
+## 6. 인터페이스를 별도 패키지로 분리하는 이유
+
+여러 노드가 하나의 인터페이스를 사용할 수 있기 때문에. 노드랑 같이 패키징 된다면 다른 노드들이 인터페이스를 사용 할때 불필요한 패키지에 의존 하게 된다.
