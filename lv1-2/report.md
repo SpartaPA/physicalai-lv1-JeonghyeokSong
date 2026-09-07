@@ -498,6 +498,26 @@ distance_watcher:
 
 ## 5. 네임스페이스 적용 후 topic list
 
+네임 스페이스 설정
+remap으로 연결 한다.
+```python
+publisher2 = Node(
+    package='turtle_py',
+    executable='distance_publisher',
+    name='distance_publisher',
+    namespace='turtle2',
+    remappings=[
+        ('/turtle1/pose', '/turtle2/pose'),
+        ('/turtle_distance', 'turtle_distance'),
+    ],
+    parameters=[params],
+    output='screen',
+)
+```
+
+네임스페이스 적용 후
+node list, ropic list
+
 ```bash
 pa2@pa2-Legion-Pro-5-16IAX10:~/git/physicalai-lv1-JeonghyeokSong/lv1-2/ros2_ws$ ros2 node list
 /distance_publisher
@@ -516,4 +536,152 @@ pa2@pa2-Legion-Pro-5-16IAX10:~/git/physicalai-lv1-JeonghyeokSong/lv1-2/ros2_ws$ 
 /turtle2/pose
 /turtle2/turtle_distance
 /turtle_distance
+```
+
+
+# 문제 10.
+
+## 1. rqt_graph 캡처
+
+![alt text](image-3.png)
+
+점검 단계:
+1. node, topic 존재 유무
+2. 실제로 발행 되고 있는지
+3. 서로 연결이 되었는지
+4. 이름, 타입이 일치 하는지
+5. 노드가 잘 짜야져 있는지
+  
+
+
+sim 을 멈춰도 노드의 토픽은 마지막 데이터로 계속 발행된다.
+```bash
+[INFO] [1788764073.135339849] [distance_publisher]: [py publisher] distance: 9.02
+[INFO] [1788764073.235262877] [distance_publisher]: [py publisher] distance: 9.06
+[INFO] [1788764073.335357563] [distance_publisher]: [py publisher] distance: 9.10
+[INFO] [1788764073.435362018] [distance_publisher]: [py publisher] distance: 9.13
+[INFO] [1788764073.535431532] [distance_publisher]: [py publisher] distance: 9.15
+[INFO] [1788764073.635443933] [distance_publisher]: [py publisher] distance: 9.17
+[INFO] [1788764073.735434816] [distance_publisher]: [py publisher] distance: 9.19
+[INFO] [1788764073.836650499] [distance_publisher]: [py publisher] distance: 9.19
+[INFO] [1788764073.935472736] [distance_publisher]: [py publisher] distance: 9.19
+[INFO] [1788764074.035724956] [distance_publisher]: [py publisher] distance: 9.19
+[INFO] [1788764074.135581001] [distance_publisher]: [py publisher] distance: 9.19
+[INFO] [1788764074.235541759] [distance_publisher]: [py publisher] distance: 9.19
+[INFO] [1788764074.335806939] [distance_publisher]: [py publisher] distance: 9.19
+```
+
+hz 도 그에 따라서 계속 측정 되는 모습
+```bash
+average rate: 10.000
+	min: 0.070s max: 0.130s std dev: 0.00105s window: 6271
+average rate: 10.000
+	min: 0.070s max: 0.130s std dev: 0.00104s window: 6281
+average rate: 10.000
+	min: 0.070s max: 0.130s std dev: 0.00104s window: 6292
+average rate: 10.000
+	min: 0.070s max: 0.130s std dev: 0.00104s window: 6303
+average rate: 10.000
+	min: 0.070s max: 0.130s std dev: 0.00104s window: 6314
+average rate: 10.000
+	min: 0.070s max: 0.130s std dev: 0.00104s window: 6324
+average rate: 10.000
+	min: 0.070s max: 0.130s std dev: 0.00104s window: 6334
+```
+
+## 2. RViz2 TF + 경유점 마커 캡처
+
+![alt text](image-4.png)
+
+## 3. ros2 bag play 재생 중 구독자 로그
+
+`ros2 run turtle_py distance_watcher`
+
+```
+[WARN] [1788772856.520773111] [distance_watcher]: Distance 3.90 > 2.50!
+[WARN] [1788772856.620422619] [distance_watcher]: Distance 4.12 > 2.50!
+[WARN] [1788772856.720932913] [distance_watcher]: Distance 4.31 > 2.50!
+```
+
+`ros2 topic echo /turtle/pose`
+```
+---
+x: 2.5929181575775146
+y: 4.255012512207031
+theta: 1.055999994277954
+linear_velocity: 0.0
+angular_velocity: 0.0
+---
+x: 2.5929181575775146
+y: 4.255012512207031
+theta: 1.055999994277954
+linear_velocity: 0.0
+angular_velocity: 0.0
+---
+x: 2.5929181575775146
+y: 4.255012512207031
+theta: 1.055999994277954
+linear_velocity: 0.0
+angular_velocity: 0.0
+---
+```
+
+## 4. pytest 통과 출력
+
+```bash
+colcon test --packages-select turtle_py --pytest-args -k turtle_equation --event-handlers console_direct+
+Starting >>> turtle_py
+============================= test session starts ==============================
+platform linux -- Python 3.10.12, pytest-6.2.5, py-1.10.0, pluggy-0.13.0
+cachedir: /home/pa2/git/physicalai-lv1-JeonghyeokSong/lv1-2/ros2_ws/build/turtle_py/.pytest_cache
+rootdir: /home/pa2/git/physicalai-lv1-JeonghyeokSong/lv1-2/ros2_ws/src/turtle_py
+plugins: ament-lint-0.12.15, launch-testing-ros-0.19.14, ament-copyright-0.12.15, ament-pep257-0.12.15, launch-testing-1.0.14, ament-flake8-0.12.15, ament-xmllint-0.12.15, cov-3.0.0, colcon-core-0.21.1
+collecting ...                          
+collected 9 items / 3 deselected / 6 selected                                  
+
+test/test_turtle_equation.py ......                                      [100%]
+
+- generated xml file: /home/pa2/git/physicalai-lv1-JeonghyeokSong/lv1-2/ros2_ws/build/turtle_py/pytest.xml -
+======================= 6 passed, 3 deselected in 0.11s ========================
+Finished <<< turtle_py [0.99s]          
+
+Summary: 1 package finished [1.17s]
+```
+
+## 5. 함수를 틀리게 바꿨을 때 실패 출력
+
+```bash
+colcon test --packages-select turtle_py --pytest-args -k turtle_equation --event-handlers console_direct+
+Starting >>> turtle_py
+============================= test session starts ==============================
+platform linux -- Python 3.10.12, pytest-6.2.5, py-1.10.0, pluggy-0.13.0
+cachedir: /home/pa2/git/physicalai-lv1-JeonghyeokSong/lv1-2/ros2_ws/build/turtle_py/.pytest_cache
+rootdir: /home/pa2/git/physicalai-lv1-JeonghyeokSong/lv1-2/ros2_ws/src/turtle_py
+plugins: ament-lint-0.12.15, launch-testing-ros-0.19.14, ament-copyright-0.12.15, ament-pep257-0.12.15, launch-testing-1.0.14, ament-flake8-0.12.15, ament-xmllint-0.12.15, cov-3.0.0, colcon-core-0.21.1
+collecting ...                          
+collected 9 items / 3 deselected / 6 selected                                  
+
+test/test_turtle_equation.py .F....                                      [100%]
+
+=================================== FAILURES ===================================
+__________________________ test_reached[0.3-0.3-True] __________________________
+test/test_turtle_equation.py:13: in test_reached
+    assert reached(dist, tol) == expected
+E   assert False == True
+E    +  where False = reached(0.3, 0.3)
+- generated xml file: /home/pa2/git/physicalai-lv1-JeonghyeokSong/lv1-2/ros2_ws/build/turtle_py/pytest.xml -
+=========================== short test summary info ============================
+FAILED test/test_turtle_equation.py::test_reached[0.3-0.3-True] - assert Fals...
+================== 1 failed, 5 passed, 3 deselected in 0.18s ===================
+Finished <<< turtle_py [1.09s]  [ with test failures ]
+
+Summary: 1 package finished [1.50s]
+  1 package had test failures: turtle_py
+```
+
+## 6. 예외 처리·logging 동작 확인
+
+```bash
+ros2 run turtle_py distance_publisher --ros-args -p publish_rate:=0.0
+[WARN] [1788776707.665874964] [distance_publisher]: publish_rate must be > 0, setting to default 10.0
 ```

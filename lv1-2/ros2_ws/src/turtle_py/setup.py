@@ -34,7 +34,10 @@ setup(
             'driver_square = turtle_py.driver_square:main',
             'polygon_action_server = turtle_py.polygon_action_server:main',
             'polygon_action_client = turtle_py.polygon_action_client:main',
-            'builtin_service_client = turtle_py.builtin_service_client:main'
+            'builtin_service_client = turtle_py.builtin_service_client:main',
+            'tf_broadcaster = turtle_py.tf_broadcaster:main',
+            'waypoint_markers = turtle_py.waypoint_markers:main',
+            'waypoint_publisher = turtle_py.waypoint_publisher:main',
         ],
     },
 )

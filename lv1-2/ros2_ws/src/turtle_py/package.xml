@@ -15,7 +15,9 @@
   <depend>turtle_interfaces</depend>
   <depend>action_msgs</depend>
   <depend>rcl_interfaces</depend>
-  
+  <depend>tf2_ros</depend>
+  <depend>visualization_msgs</depend>
+
   <exec_depend>ros2launch</exec_depend>
 
   <test_depend>ament_copyright</test_depend>

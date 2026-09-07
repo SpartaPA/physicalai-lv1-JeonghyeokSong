@@ -14,7 +14,11 @@ class DistancePublisher(Node):
 
         self.subscriber = self.create_subscription(Pose, '/turtle1/pose', self.pose_callback, 10)
         self.publisher = self.create_publisher(Float32, "/turtle_distance",10)
-        self.timer = self.create_timer(1.0/self.get_parameter('publish_rate').value, self.timer_callback)
+        rate = self.get_parameter('publish_rate').value
+        if rate <= 0:
+            self.get_logger().warn("publish_rate must be > 0, setting to default 10.0")
+            rate = 10.0
+        self.timer = self.create_timer(1.0/rate, self.timer_callback)
         self.add_on_set_parameters_callback(self.on_params)
 
     def on_params(self,params):
