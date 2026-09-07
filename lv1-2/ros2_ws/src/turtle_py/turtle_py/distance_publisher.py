@@ -5,7 +5,6 @@ from std_msgs.msg import Float32
 import math
 from rcl_interfaces.msg import SetParametersResult
 
-
 class DistancePublisher(Node):
     def __init__(self):
         super().__init__('distance_publisher')
@@ -56,4 +55,3 @@ def main(args=None):
 
 if __name__ == "__main__":
     main()
-    

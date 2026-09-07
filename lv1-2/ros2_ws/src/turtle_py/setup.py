@@ -1,4 +1,6 @@
 from setuptools import find_packages, setup
+from glob import glob
+import os
 
 package_name = 'turtle_py'
 
@@ -10,6 +12,8 @@ setup(
         ('share/ament_index/resource_index/packages',
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
+        (os.path.join('share', package_name, 'launch'), glob('launch/*.launch.py')),
+        (os.path.join('share', package_name, 'config'), glob('config/*.yaml', recursive=True)),
     ],
     install_requires=['setuptools'],
     zip_safe=True,
@@ -26,7 +30,11 @@ setup(
         'console_scripts': [
             'distance_publisher = turtle_py.distance_publisher:main',
             'distance_watcher = turtle_py.distance_watcher:main',
-            'driver_square = turtle_py.driver_square:main'
+            'qos_subscriber = turtle_py.qos_subscriber:main',
+            'driver_square = turtle_py.driver_square:main',
+            'polygon_action_server = turtle_py.polygon_action_server:main',
+            'polygon_action_client = turtle_py.polygon_action_client:main',
+            'builtin_service_client = turtle_py.builtin_service_client:main'
         ],
     },
 )
