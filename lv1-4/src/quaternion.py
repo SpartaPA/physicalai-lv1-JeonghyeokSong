@@ -11,11 +11,21 @@ SciPy 는 검산(비교) 용도로만 쓴다. 이 파일 안에서는 numpy 만 
 """
 
 from __future__ import annotations
-
 import numpy as np
 
 __all__ = ["matrix_to_quaternion", "quaternion_to_matrix", "slerp", "lerp_quat", "quat_angle"]
 
+def norm (q):
+
+    q = np.asarray(q.copy())
+    s = q[0]*q[0] + q[1]*q[1] + q[2]*q[2] + q[3]*q[3]
+    l = np.sqrt(s)
+    if l <1e-12 :
+        return np.array([1.0,0,0,0])
+    return q/l
+
+def dot (q1, q2):
+    return q1[0]*q2[0] + q1[1]*q2[1] + q1[2]*q2[2] + q1[3]*q2[3]
 
 def matrix_to_quaternion(R) -> np.ndarray:
     """회전행렬 (3,3) -> 단위 쿼터니언 (x, y, z, w).
@@ -31,7 +41,45 @@ def matrix_to_quaternion(R) -> np.ndarray:
     반환값은 반드시 정규화하고, w >= 0 이 되도록 부호를 맞춘다 (비교가 편해진다).
     """
     # TODO: 문제 3-1
-    raise NotImplementedError("matrix_to_quaternion 을 구현하세요")
+
+    t = np.trace(R)
+    w = 0.0
+    x = 0.0
+    y = 0.0
+    z = 0.0
+    
+    if t > 0:
+        s = 2*np.sqrt(1+t)
+        w = s*0.25
+        x = (R[2,1] - R[1,2])/s
+        y = (R[0,2] - R[2,0])/s
+        z = (R[1,0] - R[0,1])/s
+
+    elif R[0,0] > R[1,1] and R[0,0] > R[2,2]:
+        s = 2.0 * np.sqrt(1.0 + R[0, 0] - R[1, 1] - R[2, 2])
+        w = (R[2, 1] - R[1, 2]) / s
+        x = 0.25 * s
+        y = (R[0, 1] + R[1, 0]) / s
+        z = (R[0, 2] + R[2, 0]) / s
+    elif R[1, 1] > R[2, 2]:
+        s = 2.0 * np.sqrt(1.0 - R[0, 0] + R[1, 1] - R[2, 2])
+        w = (R[0, 2] - R[2, 0]) / s
+        x = (R[0, 1] + R[1, 0]) / s
+        y = 0.25 * s
+        z = (R[1, 2] + R[2, 1]) / s
+    else:
+        s = 2.0 * np.sqrt(1.0 - R[0,0] - R[1,1] + R[2,2])
+        w = (R[1,0] - R[0,1]) / s
+        x = (R[0,2] + R[2,0]) / s
+        y = (R[1,2] + R[2,1]) / s
+        z = 0.25 * s
+    
+    q = norm(np.array([x,y,z,w]))
+
+    if q[3] < 0:
+        q = -q
+    return q
+
 
 
 def quaternion_to_matrix(q) -> np.ndarray:
@@ -44,7 +92,19 @@ def quaternion_to_matrix(q) -> np.ndarray:
     입력이 정확히 단위가 아닐 수 있으므로 먼저 정규화한다. q 와 -q 는 같은 R 을 준다.
     """
     # TODO: 문제 3-1
-    raise NotImplementedError("quaternion_to_matrix 를 구현하세요")
+    q = np.asarray(q.copy())
+    q = norm(q)
+    x = q[0]
+    y = q[1]
+    z = q[2]
+    w = q[3]
+
+    R = np.array([[1.0 - 2.0*(y**2.0 + z**2.0), 2.0*(x*y - z*w), 2.0*(x*z + y*w)],
+        [2.0*(x*y + z*w), 1.0 - 2.0*(x**2.0 + z**2.0),  2.0*(y*z - x*w)],
+        [2.0*(x*z - y*w), 2.0*(y*z + x*w), 1.0 - 2.0*(x**2.0 + y**2.0)]])
+
+    return R
+
 
 
 def quat_angle(q0, q1) -> float:
@@ -53,7 +113,9 @@ def quat_angle(q0, q1) -> float:
         angle = 2 * arccos(|q0 . q1|)
     """
     # TODO: 문제 3-2 (slerp 안에서 재사용)
-    raise NotImplementedError("quat_angle 을 구현하세요")
+    
+
+    return 2*np.arccos(np.abs(dot(q0,q1)))
 
 
 def slerp(q0, q1, t: float, eps: float = 1e-8) -> np.ndarray:
@@ -71,7 +133,36 @@ def slerp(q0, q1, t: float, eps: float = 1e-8) -> np.ndarray:
     반환값은 단위 쿼터니언이어야 한다. t = 0 이면 q0, t = 1 이면 (부호를 맞춘) q1.
     """
     # TODO: 문제 3-2 · 3-5
-    raise NotImplementedError("slerp 를 구현하세요")
+
+    q0 = norm(q0)
+    q1 = norm(q1)
+
+    d = dot (q0,q1)
+   
+
+    if d < 0:
+        q1 = -q1
+        d = -d
+    d = np.clip(d,-1.0,1.0)
+    
+    
+    if d > 1-eps:
+        q = (1 - t) * q0 + t * q1
+        q = norm(q)
+        return q
+    elif t == 0:
+        return q0
+    elif t == 1:
+        return q1
+    else :
+        omega = np.arccos(d)
+        q = (np.sin((1-t)*omega)*q0 + np.sin(t*omega)*q1)
+        return q / np.sin(omega)
+    
+    
+
+    
+
 
 
 def lerp_quat(q0, q1, t: float, normalize: bool = False) -> np.ndarray:
@@ -83,4 +174,19 @@ def lerp_quat(q0, q1, t: float, normalize: bool = False) -> np.ndarray:
     벗어나는지 관찰하는 데 쓴다. normalize=True 이면 정규화한다 (NLERP).
     """
     # TODO: 문제 3-4
-    raise NotImplementedError("lerp_quat 를 구현하세요")
+    
+    q0 = q0.copy()
+    q1 = q1.copy()
+
+    d = dot (q0,q1)
+    d = np.clip(d,-1.0,1.0)
+
+    if d < 0:
+        q1 = -q1
+        d = -d
+    q = (1-t)*q0 + t*q1
+
+    if normalize :
+        q = norm(q)
+
+    return q
