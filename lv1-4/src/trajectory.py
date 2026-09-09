@@ -63,7 +63,27 @@ def quintic_profile(t, t0: float, tf: float, q0, qf,
     q, qd, qdd : 위치, 속도, 가속도 (해석적 미분. 유한차분이 아니다)
     """
     # TODO: 문제 4-4
-    raise NotImplementedError("quintic_profile 을 구현하세요")
+    
+    t = np.asarray(t, dtype=float)
+    q0 = np.asarray(q0, dtype=float)
+    qf = np.asarray(qf, dtype=float)
+
+    T = tf - t0
+    tau = (t - t0) / T                                  # (N,)
+
+    s = 10*tau**3 - 15*tau**4 + 6*tau**5              # 위치용 형상함수
+    sd = (30*tau**2 - 60*tau**3 + 30*tau**4) / T       # 연쇄법칙 1/T
+    sdd = (60*tau - 180*tau**2 + 120*tau**3) / T**2     # 연쇄법칙 1/T²
+
+    if q0.ndim == 1:                                    # 다차원이면 시간축에 새 축
+        s, sd, sdd = s[:, None], sd[:, None], sdd[:, None]
+
+    dq = qf - q0
+    q = q0 + dq * s
+    qd = dq * sd
+    qdd = dq * sdd
+
+    return q, qd, qdd
 
 
 def finite_diff(y, t) -> np.ndarray:
