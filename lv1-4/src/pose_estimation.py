@@ -38,7 +38,28 @@ def pca_axes(P):
     centroid : (3,) 점군 중심
     """
     # TODO: 문제 5-1
-    raise NotImplementedError("pca_axes 를 구현하세요")
+ 
+    P = P.copy()
+
+    centroid = np.mean(P, axis=0, dtype=np.float64)
+    X = P - centroid
+
+    C = (X.T@X)/(len(P)-1)
+
+    eigvals, axes = np.linalg.eigh(C)
+
+    idx = np.argsort(eigvals)[::-1]
+    eigvals = eigvals[idx]
+    axes = axes[:, idx]
+    if np.linalg.det(axes) < 0 :
+        axes[:,-1] = -axes[:,-1]
+    # axes = -axes[:,2]
+
+
+    return axes, eigvals, centroid
+
+
+    
 
 
 def kabsch(P, Q):
@@ -56,7 +77,23 @@ def kabsch(P, Q):
     t : (3,) 병진
     """
     # TODO: 문제 5-3
-    raise NotImplementedError("kabsch 를 구현하세요")
+
+    cP = np.mean(P, axis=0, dtype= np.float64)
+    cQ = np.mean(Q, axis=0, dtype= np.float64)
+
+    X = P - cP
+    Y = Q - cQ
+    H = X.T@Y
+    U, S, Vt = np.linalg.svd(H)
+
+    d = np.sign(np.linalg.det(Vt.T@U.T))
+    D = np.diag([1.0, 1.0, d])
+    R = Vt.T@D@U.T
+    t = cQ - R@cP
+
+    return R, t
+
+
 
 
 def fit_plane_lstsq(P):
@@ -74,7 +111,21 @@ def fit_plane_lstsq(P):
     residuals : (N,) 각 점의 부호 있는 평면까지의 거리 n . p + d
     """
     # TODO: 문제 5-5
-    raise NotImplementedError("fit_plane_lstsq 를 구현하세요")
+
+    x, y, z = P[:,0], P[:,1], P[:,2]
+    A = np.column_stack([x,y,np.ones(len(P))])
+    coeffs, *_ = np.linalg.lstsq(A,z, rcond=None)
+    a,b,c = coeffs
+
+    n = np.array([a,b,-1.0])
+    norm = np.linalg.norm(n)
+    n_unit = n/norm
+    d = c / norm
+
+    residuals = P@ n_unit + d
+
+
+    return n_unit, d, residuals
 
 
 def remove_outliers(P, residuals, k: float = 3.0):
@@ -89,5 +140,13 @@ def remove_outliers(P, residuals, k: float = 3.0):
     P_clean : (M,3) 남은 점
     mask : (N,) bool — True 가 남긴 점. P 와 대응 점군에 같은 mask 를 적용해야 Kabsch 대응이 유지된다
     """
-    # TODO: 문제 5-5
-    raise NotImplementedError("remove_outliers 를 구현하세요")
+    residuals = np.asarray(residuals, dtype=float)
+
+    med = np.median(residuals)
+    mad = np.median(np.abs(residuals - med))
+    sigma = 1.4826 * mad
+    
+    mask = np.abs(residuals - med) < k * sigma
+    P_clean = P[mask]
+
+    return P_clean, mask
