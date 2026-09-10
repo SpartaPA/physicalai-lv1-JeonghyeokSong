@@ -21,6 +21,7 @@ main.cpp:(.text+0x28): undefined reference to `Motor::Motor(unsigned int)'
 collect2: error: ld returned 1 exit status
 ```
 
+
 ## 3. CMake 빌드 출력
 
 
