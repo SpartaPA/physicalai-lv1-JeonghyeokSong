@@ -155,10 +155,12 @@ SUBSYSTEM=="tty", ATTRS{idVendor}=="10c4", ATTRS{idProduct}=="ea70", SYMLINK+="r
 PR URL
 - https://github.com/cowsjh/physicalai-lv1-assignments/pull/1
 
+
 ## 2. 리뷰 코멘트와 반영 커밋
 
 ![pr](image.png)
 ![prcomments](image-1.png)
+
 
 ## 3. 충돌이 난 파일과 줄.
 
@@ -172,12 +174,15 @@ pa2@pa2-Legion-Pro-5-16IAX10:~/git/physicalai-lv1-assignments$ git merge branch-
 ```
 기존에 있던(먼저 PR된) 커밋과 이후의 커밋 둘중 하나를 선택.
 
+
 ## 4. merge 방식 이력 그래프 / rebase 방식 이력 그래프
 
 merge 는 브런치 에서 main으로 붙는 모양이지만, rebase 는 이전의 커밋 들이 main 의 업스트림 위로 올라 오면서 같은 선상에있는것 처럼 보인다.
 ![alt text](image-2.png)
 
+
 ## 5. 언제 merge 를, 언제 rebase 를 쓸지
 
 일반 적인 경우 merge를 쓰지만, 히스토리를 정리 하고 싶거나 다른 브런치의 수정 사항을 비교하며 테스트 해야할때 rebase로 새로 가져오면 충둘을 방지 할 수 있다.
 
+  
